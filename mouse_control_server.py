@@ -1,6 +1,9 @@
 import socket
 import mouse
 import base64
+import mss
+import mss.tools
+
 
 # Define the host and port for the server
 HOST = "0.0.0.0"
@@ -27,24 +30,35 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
     client_socket, addr = server_socket.accept()
     print("Client connected:", addr)
 
-    while True:
-        # Receive data from the client
-        data = client_socket.recv(1024).decode()
-        if not data:
-            break
+    with mss.mss() as sct:
+        sct.compression_level = 7
+        monitor = sct.monitors[1]
+        while True:
+            # Receive data from the client
+            data = client_socket.recv(1024).decode()
+            if not data:
+                break
 
-        # Extract mouse position data
-        position = data.split(",")
-        if len(position) != 2:
-            continue  # Ignore invalid data
+            # Extract mouse position data
+            position = data.split(",")
+            if len(position) != 2:
+                continue  # Ignore invalid data
 
-        try:
-            x, y = map(int, position)
-            client_socket.sendall(img64.encode())
-        except ValueError:
-            continue  # Ignore invalid data
+            try:
+                x, y = map(int, position)
 
-        # Move the mouse on the host machine
-        current_x = x
-        current_y = y
-        mouse.move(current_x, current_y)
+                sct_img = sct.grab(monitor)
+                png = mss.tools.to_png(sct_img.rgb, sct_img.size)
+
+                with open("server_img.png", "wb") as file:
+                    file.write(png)
+
+                img64 = base64.b64encode(png).decode()
+                client_socket.sendall(img64.encode())
+            except ValueError:
+                continue  # Ignore invalid data
+
+            # Move the mouse on the host machine
+            current_x = x
+            current_y = y
+            mouse.move(current_x, current_y)
