@@ -2,7 +2,7 @@ import socket
 import base64
 
 # Define the server host and port
-HOST = "IPADDRESS"
+HOST = "IP"
 PORT = 53866
 
 # Create a socket object
@@ -25,8 +25,8 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
         data = f"{x},{y}"
         client_socket.sendall(data.encode())
 
-        img = client_socket.recv(4096).decode()
+        img = client_socket.recv(4096 * 2000).decode()
         img = base64.b64decode(img)
 
-        with open("rec_img.bmp", "wb") as file:
+        with open("rec_img.png", "wb") as file:
             file.write(img)
